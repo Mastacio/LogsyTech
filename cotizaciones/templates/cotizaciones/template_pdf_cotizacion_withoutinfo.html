@@ -1,0 +1,439 @@
+{% load currency_filters %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotización {{ cotizacion.numero_cotizacion }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+            @top-center {
+                content: "Página " counter(page) " de " counter(pages);
+                font-size: 10px;
+                color: #666;
+            }
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+            background: white;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #2c3e50;
+            padding-bottom: 20px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .header .subtitle {
+            font-size: 16px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        
+        .company-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            align-items: flex-start;
+        }
+        
+        .company-details {
+            flex: 1;
+        }
+        
+        .company-details h3 {
+            color: #2c3e50;
+            font-size: 16px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+        
+        .company-details p {
+            margin-bottom: 5px;
+            font-size: 11px;
+        }
+        
+        .quote-info {
+            flex: 1;
+            text-align: right;
+        }
+        
+        .quote-info h3 {
+            color: #2c3e50;
+            font-size: 16px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+        
+        .quote-info p {
+            margin-bottom: 5px;
+            font-size: 11px;
+        }
+        
+        .client-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .client-info h3 {
+            color: #2c3e50;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        
+        .client-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .client-field {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .client-field label {
+            font-weight: bold;
+            color: #7f8c8d;
+            font-size: 10px;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+        
+        .client-field span {
+            font-size: 12px;
+            color: #2c3e50;
+        }
+        
+        .services-section {
+            margin-bottom: 30px;
+        }
+        
+        .services-section h3 {
+            color: #2c3e50;
+            font-size: 18px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 8px;
+        }
+        
+        .services-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        .services-table th {
+            background: #2c3e50;
+            color: white;
+            padding: 12px 8px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .services-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #ddd;
+            font-size: 11px;
+        }
+        
+        .services-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .services-table tr:hover {
+            background: #e9ecef;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .text-bold {
+            font-weight: bold;
+        }
+        
+        .totals-section {
+            margin-top: 30px;
+            border-top: 2px solid #3498db;
+            padding-top: 20px;
+        }
+        
+        .totals-table {
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+        }
+        
+        .totals-table td {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+        
+        .totals-table .label {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .totals-table .amount {
+            text-align: right;
+            font-weight: bold;
+        }
+        
+        .totals-table .total-row {
+            border-top: 2px solid #2c3e50;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+        
+        .notes-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #f39c12;
+        }
+        
+        .notes-section h3 {
+            color: #2c3e50;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        
+        .notes-section p {
+            font-size: 11px;
+            line-height: 1.5;
+            color: #555;
+        }
+        
+        .terms-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .terms-section h3 {
+            color: #2c3e50;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        
+        .terms-section p {
+            font-size: 11px;
+            line-height: 1.5;
+            color: #555;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 10px;
+            color: #7f8c8d;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-borrador { background: #f39c12; color: white; }
+        .status-enviada { background: #3498db; color: white; }
+        .status-aprobada { background: #27ae60; color: white; }
+        .status-rechazada { background: #e74c3c; color: white; }
+        .status-cancelada { background: #95a5a6; color: white; }
+        
+        .payment-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            background: #9b59b6;
+            color: white;
+        }
+        
+        @media print {
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+    {% load currency_filters %}
+    {% load l10n %}
+</head>
+<body>
+    <!-- Encabezado -->
+    <div class="header">
+        <h1>COTIZACIÓN</h1>
+        <div class="subtitle">Propuesta de Servicios Profesionales</div>
+    </div>
+    
+    <!-- Información de la Empresa y Cotización -->
+    <div class="company-info">
+        <div class="company-details">
+            <h3>Información del Cliente</h3>
+        <div class="client-grid">
+            <div class="client-row" style="display: flex; flex-wrap: wrap; gap: 24px;">
+                <div class="client-field" style="flex: 1 1 100px; min-width: 180px;">
+                    <label>Nombre</label>
+                    <span>{{ cotizacion.cliente.nombre }}</span>
+                </div>
+                <div class="client-field" style="flex: 1 1 100px; min-width: 180px;">
+                    <label>Email</label>
+                    <span>{{ cotizacion.cliente.email }}</span>
+                </div>
+                <div class="client-field" style="flex: 1 1 100px; min-width: 180px;">
+                    <label>Teléfono</label>
+                    <span>{{ cotizacion.cliente.telefono|default:"No especificado" }}</span>
+                </div>
+                <div class="client-field" style="flex: 1 1 100px; min-width: 180px;">
+                    <label>Empresa</label>
+                    <span>{{ cotizacion.cliente.empresa|default:"No especificado" }}</span>
+                </div>
+            </div>           
+        </div>
+        </div>
+        
+        <div class="quote-info">
+            <h3>Información de la Cotización</h3>
+            <p><strong>Número:</strong> {{ cotizacion.numero_cotizacion }}</p>
+            <p><strong>Fecha:</strong> {{ cotizacion.fecha_creacion|date:"d/m/Y" }}</p>
+            <p><strong>Vencimiento:</strong> {{ cotizacion.fecha_vencimiento|date:"d/m/Y" }}</p>
+            <p><strong>Estado:</strong> 
+                <span class="status-badge status-{{ cotizacion.estado }}">
+                    {{ cotizacion.get_estado_display }}
+                </span>
+            </p>
+            <p><strong>Modalidad:</strong> 
+                <span class="payment-badge">
+                    {{ cotizacion.get_modalidad_pago_display }}
+                </span>
+            </p>
+        </div>
+    </div>
+    
+
+    <!-- Detalles de Servicios -->
+    <div class="services-section">
+        <h3>Detalles de Servicios</h3>
+        {% if detalles %}
+        <table class="services-table">
+            <thead>
+                <tr>
+                    <th>Servicio</th>
+                    <th>Descripción</th>
+                    <th class="text-center">Horas</th>
+                    <th class="text-right">Tarifa/Hora</th>
+                    <th class="text-right">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detalle in detalles %}
+                <tr>
+                    <td><strong>{{ detalle.servicio.nombre }}</strong></td>
+                    <td>{{ detalle.descripcion }}</td>
+                    <td class="text-center">{{ detalle.horas_estimadas }}</td>
+                    <td class="text-right">{{ detalle.tarifa_hora|currency }}</td>
+                    <td class="text-right text-bold">{{ detalle.subtotal|currency }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="text-align: center; color: #7f8c8d; font-style: italic; padding: 20px;">
+            No hay detalles de servicios agregados.
+        </p>
+        {% endif %}
+    </div>
+    
+    <!-- Resumen de Totales -->
+    <div class="totals-section">
+        <table class="totals-table">
+            <tr>
+                <td class="label">Subtotal:</td>
+                <td class="amount">{{ cotizacion.subtotal|currency }}</td>
+            </tr>
+            {% if cotizacion.descuento_porcentaje > 0 %}
+            <tr>
+                <td class="label">Descuento ({{ cotizacion.descuento_porcentaje }}%):</td>
+                <td class="amount" style="color: #e74c3c;">-{{ cotizacion.descuento_monto|currency }}</td>
+            </tr>
+            <tr>
+                <td class="label">Base Imponible:</td>
+                <td class="amount">{{ cotizacion.subtotal|add:cotizacion.descuento_monto|currency }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td class="label">IVA ({{ cotizacion.iva_porcentaje }}%):</td>
+                <td class="amount">{{ cotizacion.iva_monto|currency }}</td>
+            </tr>
+            <tr class="total-row">
+                <td class="label">TOTAL:</td>
+                <td class="amount">{{ cotizacion.total|currency }}</td>
+            </tr>
+        </table>
+    </div>
+    
+    <!-- Notas Adicionales -->
+    {% if cotizacion.notas %}
+    <div class="notes-section">
+        <h3>Notas Adicionales</h3>
+        <p>{{ cotizacion.notas|linebreaks }}</p>
+    </div>
+    {% endif %}
+    
+    <!-- Términos y Condiciones -->
+    {% if cotizacion.terminos_condiciones %}
+    <div class="terms-section">
+        <h3>Términos y Condiciones</h3>
+        <p>{{ cotizacion.terminos_condiciones|linebreaks }}</p>
+    </div>
+    {% endif %}
+    
+    <!-- Pie de Página -->
+    <div class="footer">
+        <p><strong>Gracias por su confianza en nuestros servicios</strong></p>
+        <p>Esta cotización es válida por 30 días desde la fecha de emisión</p>
+        <p>Para cualquier consulta, no dude en contactarnos</p>
+    </div>
+</body>
+</html>

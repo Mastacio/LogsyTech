@@ -1,0 +1,181 @@
+{% extends 'cotizaciones/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% if object %}Editar{% else %}Nueva{% endif %} Cotización - Sistema de Cotizaciones{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'cotizaciones:cotizacion_list' %}">Cotizaciones</a></li>
+                        <li class="breadcrumb-item active">{% if object %}Editar{% else %}Nueva{% endif %}</li>
+                    </ol>
+                </nav>
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-{% if object %}edit{% else %}plus{% endif %} me-2"></i>
+                    {% if object %}Editar{% else %}Nueva{% endif %} Cotización
+                </h1>
+            </div>
+            <div>
+                <a href="{% url 'cotizaciones:cotizacion_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Volver
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-file-invoice-dollar me-2"></i>
+                    Información de la Cotización
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" class="form">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form.cliente|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.fecha_vencimiento|as_crispy_field }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form.modalidad_pago|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.estado|as_crispy_field }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form.descuento_porcentaje|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.iva_porcentaje|as_crispy_field }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            {{ form.notas|as_crispy_field }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            {{ form.terminos_condiciones|as_crispy_field }}
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'cotizaciones:cotizacion_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>
+                                    {% if object %}Actualizar{% else %}Crear{% endif %} Cotización
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if object %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list-ul me-2"></i>
+                    Próximos Pasos
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-list-ul fa-3x text-primary mb-3"></i>
+                            <h6>Agregar Servicios</h6>
+                            <p class="text-muted">Define los servicios y horas para esta cotización</p>
+                            <a href="{% url 'cotizaciones:cotizacion_detalles_edit' object.pk %}" class="btn btn-outline-primary">
+                                <i class="fas fa-plus me-2"></i>Agregar Detalles
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-eye fa-3x text-success mb-3"></i>
+                            <h6>Ver Cotización</h6>
+                            <p class="text-muted">Revisa la cotización completa con todos los detalles</p>
+                            <a href="{% url 'cotizaciones:cotizacion_detail' object.pk %}" class="btn btn-outline-success">
+                                <i class="fas fa-eye me-2"></i>Ver Detalles
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-download fa-3x text-info mb-3"></i>
+                            <h6>Generar PDF</h6>
+                            <p class="text-muted">Descarga la cotización en formato PDF</p>
+                            <a href="{% url 'cotizaciones:cotizacion_pdf' object.pk %}" class="btn btn-outline-info">
+                                <i class="fas fa-download me-2"></i>Descargar PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-calculate discount amount when percentage changes
+document.getElementById('id_descuento_porcentaje').addEventListener('input', function() {
+    const percentage = parseFloat(this.value) || 0;
+    if (percentage > 100) {
+        this.value = 100;
+    }
+});
+
+// Auto-calculate IVA amount when percentage changes
+document.getElementById('id_iva_porcentaje').addEventListener('input', function() {
+    const percentage = parseFloat(this.value) || 0;
+    if (percentage > 100) {
+        this.value = 100;
+    }
+});
+
+// Set default date for fecha_vencimiento if empty
+document.addEventListener('DOMContentLoaded', function() {
+    const fechaVencimiento = document.getElementById('id_fecha_vencimiento');
+    if (!fechaVencimiento.value) {
+        const today = new Date();
+        const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+        fechaVencimiento.value = thirtyDaysFromNow.toISOString().split('T')[0];
+    }
+});
+</script>
+{% endblock %}
+

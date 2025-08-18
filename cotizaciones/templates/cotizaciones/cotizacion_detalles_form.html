@@ -1,0 +1,378 @@
+{% extends 'cotizaciones/base.html' %}
+{% load currency_filters %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }} - Sistema de Cotizaciones{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'cotizaciones:cotizacion_list' %}">Cotizaciones</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'cotizaciones:cotizacion_detail' cotizacion.pk %}">{{ cotizacion.numero_cotizacion }}</a></li>
+                        <li class="breadcrumb-item active">Detalles</li>
+                    </ol>
+                </nav>
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-list-ul me-2"></i>
+                    {{ title }}
+                </h1>
+            </div>
+            <div>
+                <a href="{% url 'cotizaciones:cotizacion_detail' cotizacion.pk %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Volver
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cogs me-2"></i>
+                    Detalles de Servicios
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" class="form">
+                    {% csrf_token %}
+                    
+                    {{ formset.management_form }}
+                    
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="detalles-table">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Servicio</th>
+                                    <th>Descripción</th>
+                                    <th>Horas</th>
+                                    <th>Tarifa/Hora</th>
+                                    <th>Subtotal</th>
+                                    <th>Eliminar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for form in formset %}
+                                <tr class="detalle-row">
+                                    <td>
+                                        {{ form.servicio }}
+                                        {% if form.servicio.errors %}
+                                            <div class="text-danger small">{{ form.servicio.errors }}</div>
+                                        {% endif %}
+                                        {{ form.id }}
+                                    </td>
+                                    <td>
+                                        {{ form.descripcion }}
+                                        {% if form.descripcion.errors %}
+                                            <div class="text-danger small">{{ form.descripcion.errors }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ form.horas_estimadas }}
+                                        {% if form.horas_estimadas.errors %}
+                                            <div class="text-danger small">{{ form.horas_estimadas.errors }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ form.tarifa_hora }}
+                                        {% if form.tarifa_hora.errors %}
+                                            <div class="text-danger small">{{ form.tarifa_hora.errors }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="subtotal-display">$0.00</span>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if formset.can_delete %}
+                                            {{ form.DELETE }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <button type="button" class="btn btn-success" id="add-detalle">
+                                <i class="fas fa-plus me-2"></i>Agregar Servicio
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'cotizaciones:cotizacion_detail' cotizacion.pk %}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Guardar Detalles
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resumen de la cotización -->
+<div class="row mt-4">
+    <div class="col-lg-6 offset-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calculator me-2"></i>
+                    Resumen de Totales
+                </h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td class="fw-bold">Subtotal:</td>
+                        <td class="text-end" id="subtotal-display">{{ cotizacion.subtotal|currency_rd }}</td>
+                    </tr>
+                    {% if cotizacion.descuento_porcentaje > 0 %}
+                    <tr>
+                        <td class="fw-bold">Descuento ({{ cotizacion.descuento_porcentaje|percentage }}):</td>
+                        <td class="text-end text-danger">-{{ cotizacion.descuento_monto|currency_rd }}</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Base Imponible:</td>
+                        <td class="text-end">{{ cotizacion.subtotal|add:cotizacion.descuento_monto|currency_rd }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td class="fw-bold">IVA ({{ cotizacion.iva_porcentaje|percentage }}):</td>
+                        <td class="text-end">{{ cotizacion.iva_monto|currency_rd }}</td>
+                    </tr>
+                    <tr class="border-top">
+                        <td class="fw-bold h5">TOTAL:</td>
+                        <td class="text-end h5 text-primary">{{ cotizacion.total|currency_rd }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Función para calcular subtotales
+function calcularSubtotales() {
+    let totalSubtotal = 0;
+    
+    $('.detalle-row').each(function() {
+        const horas = parseFloat($(this).find('input[name*="horas_estimadas"]').val()) || 0;
+        const tarifa = parseFloat($(this).find('input[name*="tarifa_hora"]').val()) || 0;
+        const subtotal = horas * tarifa;
+        
+        $(this).find('.subtotal-display').text('$' + subtotal.toFixed(2));
+        totalSubtotal += subtotal;
+    });
+    
+    $('#subtotal-display').text('$' + totalSubtotal.toFixed(2));
+}
+
+// Event listeners para cambios en horas y tarifa
+$(document).on('input', 'input[name*="horas_estimadas"], input[name*="tarifa_hora"]', function() {
+    calcularSubtotales();
+});
+
+// Auto-completar tarifa cuando se selecciona un servicio
+$(document).on('change', 'select[name*="servicio"]', function() {
+    const servicioId = $(this).val();
+    const row = $(this).closest('.detalle-row');
+    
+    if (servicioId) {
+        // Primero intentar obtener la tarifa del atributo data
+        const selectedOption = $(this).find('option:selected');
+        const dataTarifa = selectedOption.attr('data-tarifa');
+        
+        if (dataTarifa) {
+            // Usar la tarifa del atributo data (más rápido)
+            row.find('input[name*="tarifa_hora"]').val(parseFloat(dataTarifa).toFixed(2));
+            calcularSubtotales();
+        } else {
+            // Fallback: llamada AJAX para obtener la tarifa real del servicio
+            $.ajax({
+                url: '{% url "cotizaciones:obtener_tarifa_servicio" %}',
+                method: 'GET',
+                data: { servicio_id: servicioId },
+                success: function(response) {
+                    if (response.success) {
+                        row.find('input[name*="tarifa_hora"]').val(response.tarifa.toFixed(2));
+                        calcularSubtotales();
+                    } else {
+                        console.error('Error al obtener tarifa:', response.error);
+                    }
+                },
+                error: function() {
+                    console.error('Error en la petición AJAX');
+                }
+            });
+        }
+    }
+});
+
+// Agregar nueva fila de detalle
+$('#add-detalle').click(function() {
+    const totalForms = parseInt($('#id_detallecotizacion_set-TOTAL_FORMS').val());
+    const newFormNum = totalForms;
+    
+    // Crear las opciones de servicios dinámicamente
+    let serviciosOptions = '<option value="">Seleccionar servicio...</option>';
+    {% for servicio in servicios %}
+        serviciosOptions += '<option value="{{ servicio.id }}" data-tarifa="{{ servicio.tarifa_hora }}">{{ servicio.nombre }} - ${{ servicio.tarifa_hora }}/hora</option>';
+    {% endfor %}
+    
+    const newRow = `
+        <tr class="detalle-row">
+            <td>
+                <select name="detallecotizacion_set-${newFormNum}-servicio" id="id_detallecotizacion_set-${newFormNum}-servicio" class="form-control" required>
+                    ${serviciosOptions}
+                </select>
+                <input type="hidden" name="detallecotizacion_set-${newFormNum}-id" id="id_detallecotizacion_set-${newFormNum}-id" value="">
+            </td>
+            <td>
+                <textarea name="detallecotizacion_set-${newFormNum}-descripcion" id="id_detallecotizacion_set-${newFormNum}-descripcion" class="form-control" rows="2" required></textarea>
+            </td>
+            <td>
+                <input type="number" name="detallecotizacion_set-${newFormNum}-horas_estimadas" id="id_detallecotizacion_set-${newFormNum}-horas_estimadas" class="form-control" step="0.5" min="0.5" required>
+            </td>
+            <td>
+                <input type="number" name="detallecotizacion_set-${newFormNum}-tarifa_hora" id="id_detallecotizacion_set-${newFormNum}-tarifa_hora" class="form-control" step="0.01" min="0" required>
+            </td>
+            <td>
+                <span class="subtotal-display">$0.00</span>
+            </td>
+            <td class="text-center">
+                <input type="checkbox" name="detallecotizacion_set-${newFormNum}-DELETE" id="id_detallecotizacion_set-${newFormNum}-DELETE">
+            </td>
+        </tr>
+    `;
+    
+    $('#detalles-table tbody').append(newRow);
+    $('#id_detallecotizacion_set-TOTAL_FORMS').val(newFormNum + 1);
+    
+    // Actualizar los IDs de los elementos existentes para que coincidan con el formset
+    updateFormsetIds();
+});
+
+// Función para actualizar los IDs y nombres del formset
+function updateFormsetIds() {
+    $('.detalle-row').each(function(index) {
+        const row = $(this);
+        row.find('select[name*="servicio"]').attr({
+            'id': `id_detallecotizacion_set-${index}-servicio`,
+            'name': `detallecotizacion_set-${index}-servicio`
+        });
+        row.find('textarea[name*="descripcion"]').attr({
+            'id': `id_detallecotizacion_set-${index}-descripcion`,
+            'name': `detallecotizacion_set-${index}-descripcion`
+        });
+        row.find('input[name*="horas_estimadas"]').attr({
+            'id': `id_detallecotizacion_set-${index}-horas_estimadas`,
+            'name': `detallecotizacion_set-${index}-horas_estimadas`
+        });
+        row.find('input[name*="tarifa_hora"]').attr({
+            'id': `id_detallecotizacion_set-${index}-tarifa_hora`,
+            'name': `detallecotizacion_set-${index}-tarifa_hora`
+        });
+        row.find('input[name*="DELETE"]').attr({
+            'id': `id_detallecotizacion_set-${index}-DELETE`,
+            'name': `detallecotizacion_set-${index}-DELETE`
+        });
+        // Manejar el campo id si existe
+        const idField = row.find('input[name*="id"]');
+        if (idField.length > 0) {
+            idField.attr({
+                'id': `id_detallecotizacion_set-${index}-id`,
+                'name': `detallecotizacion_set-${index}-id`
+            });
+        }
+    });
+}
+
+// Función para eliminar filas marcadas para eliminar
+function removeDeletedRows() {
+    $('.detalle-row').each(function() {
+        const deleteCheckbox = $(this).find('input[name*="DELETE"]');
+        if (deleteCheckbox.is(':checked')) {
+            $(this).remove();
+        }
+    });
+}
+
+// Calcular subtotales al cargar la página
+$(document).ready(function() {
+    calcularSubtotales();
+    
+    // Manejar eliminación de filas
+    $(document).on('change', 'input[name*="DELETE"]', function() {
+        if ($(this).is(':checked')) {
+            $(this).closest('.detalle-row').addClass('table-danger');
+        } else {
+            $(this).closest('.detalle-row').removeClass('table-danger');
+        }
+    });
+    
+    // Validar formulario antes de enviar
+    $('form').on('submit', function(e) {
+        // Actualizar el contador de formularios antes de enviar
+        const totalForms = $('.detalle-row').length;
+        $('#id_detallecotizacion_set-TOTAL_FORMS').val(totalForms);
+        
+        // Actualizar nombres de campos antes de enviar
+        updateFormsetIds();
+        
+        // Validar que al menos un detalle tenga datos
+        let hasValidData = false;
+        let formData = [];
+        
+        $('.detalle-row').each(function(index) {
+            const servicio = $(this).find('select[name*="servicio"]').val();
+            const descripcion = $(this).find('textarea[name*="descripcion"]').val();
+            const horas = $(this).find('input[name*="horas_estimadas"]').val();
+            const tarifa = $(this).find('input[name*="tarifa_hora"]').val();
+            const isDeleted = $(this).find('input[name*="DELETE"]').is(':checked');
+            
+            // Si no está marcado para eliminar y tiene datos, es válido
+            if (!isDeleted && servicio && descripcion && horas && tarifa) {
+                hasValidData = true;
+            }
+            
+            // Debug: mostrar datos que se van a enviar
+            formData.push({
+                index: index,
+                servicio: servicio,
+                descripcion: descripcion,
+                horas: horas,
+                tarifa: tarifa,
+                deleted: isDeleted
+            });
+        });
+        
+        console.log('Datos a enviar:', formData);
+        console.log('Total forms:', totalForms);
+        
+        if (!hasValidData) {
+            e.preventDefault();
+            alert('Debe agregar al menos un detalle de servicio con todos los campos completos.');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}
+

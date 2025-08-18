@@ -1,0 +1,306 @@
+{% extends 'cotizaciones/base.html' %}
+{% load currency_filters %}
+
+{% block title %}{{ cotizacion.numero_cotizacion }} - Sistema de Cotizaciones{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'cotizaciones:cotizacion_list' %}">Cotizaciones</a></li>
+                        <li class="breadcrumb-item active">{{ cotizacion.numero_cotizacion }}</li>
+                    </ol>
+                </nav>
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-file-invoice-dollar me-2"></i>
+                    Cotización {{ cotizacion.numero_cotizacion }}
+                </h1>
+            </div>
+            <div class="btn-group" role="group">
+                <a href="{% url 'cotizaciones:cotizacion_pdf' cotizacion.pk %}" class="btn btn-success">
+                    <i class="fas fa-download me-2"></i>Descargar PDF
+                </a>
+                <a href="{% url 'cotizaciones:cotizacion_update' cotizacion.pk %}" class="btn btn-warning">
+                    <i class="fas fa-edit me-2"></i>Editar
+                </a>
+                <a href="{% url 'cotizaciones:cotizacion_detalles_edit' cotizacion.pk %}" class="btn btn-info">
+                    <i class="fas fa-list-ul me-2"></i>Editar Detalles
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Información de la cotización -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Información de la Cotización
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td class="fw-bold">Número:</td>
+                                <td>{{ cotizacion.numero_cotizacion }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Estado:</td>
+                                <td>
+                                    <span class="badge bg-{% if cotizacion.estado == 'aprobada' %}success{% elif cotizacion.estado == 'enviada' %}warning{% elif cotizacion.estado == 'rechazada' %}danger{% elif cotizacion.estado == 'cancelada' %}secondary{% else %}primary{% endif %}">
+                                        {{ cotizacion.get_estado_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Modalidad de Pago:</td>
+                                <td>
+                                    <span class="badge bg-info">
+                                        {{ cotizacion.get_modalidad_pago_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Fecha de Creación:</td>
+                                <td>{{ cotizacion.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td class="fw-bold">Fecha de Vencimiento:</td>
+                                <td class="{% if cotizacion.fecha_vencimiento < today %}text-danger{% elif cotizacion.fecha_vencimiento < today_plus_7 %}text-warning{% endif %}">
+                                    {{ cotizacion.fecha_vencimiento|date:"d/m/Y" }}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Descuento:</td>
+                                <td>{{ cotizacion.descuento_porcentaje }}%</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">IVA:</td>
+                                <td>{{ cotizacion.iva_porcentaje }}%</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Días Restantes:</td>
+                                <td>
+                                    {% if cotizacion.fecha_vencimiento < today %}
+                                        <span class="text-danger">Vencida</span>
+                                    {% else %}
+                                        <span class="{% if cotizacion.fecha_vencimiento < today_plus_7 %}text-warning{% endif %}">
+                                            {{ cotizacion.fecha_vencimiento|timeuntil }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user me-2"></i>
+                    Información del Cliente
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6 class="fw-bold">{{ cotizacion.cliente.nombre }}</h6>
+                {% if cotizacion.cliente.empresa %}
+                    <p class="text-muted mb-2">{{ cotizacion.cliente.empresa }}</p>
+                {% endif %}
+                <p class="mb-1">
+                    <i class="fas fa-envelope me-2 text-muted"></i>
+                    {{ cotizacion.cliente.email }}
+                </p>
+                {% if cotizacion.cliente.telefono %}
+                    <p class="mb-1">
+                        <i class="fas fa-phone me-2 text-muted"></i>
+                        {{ cotizacion.cliente.telefono }}
+                    </p>
+                {% endif %}
+                {% if cotizacion.cliente.direccion %}
+                    <p class="mb-0">
+                        <i class="fas fa-map-marker-alt me-2 text-muted"></i>
+                        {{ cotizacion.cliente.direccion }}
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detalles de servicios -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list-ul me-2"></i>
+                    Detalles de Servicios
+                </h5>
+                <a href="{% url 'cotizaciones:cotizacion_detalles_edit' cotizacion.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-edit me-1"></i>Editar Detalles
+                </a>
+            </div>
+            <div class="card-body">
+                {% if detalles %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Servicio</th>
+                                <th>Descripción</th>
+                                <th class="text-center">Horas</th>
+                                <th class="text-end">Tarifa/Hora</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for detalle in detalles %}
+                            <tr>
+                                <td>
+                                    <div>
+                                        <div class="fw-bold">{{ detalle.servicio.nombre }}</div>
+                                        <small class="text-muted">{{ detalle.servicio.get_tipo_servicio_display }}</small>
+                                    </div>
+                                </td>
+                                <td>{{ detalle.descripcion }}</td>
+                                <td class="text-center">{{ detalle.horas_estimadas }}</td>
+                                <td class="text-end">{{ detalle.tarifa_hora|currency_rd }}</td>
+                                <td class="text-end fw-bold">{{ detalle.subtotal|currency_rd }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-list-ul fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No hay detalles de servicios</h5>
+                    <p class="text-muted">Agrega servicios a esta cotización para comenzar</p>
+                    <a href="{% url 'cotizaciones:cotizacion_detalles_edit' cotizacion.pk %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Agregar Servicios
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Totales -->
+<div class="row mb-4">
+    <div class="col-lg-6 offset-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calculator me-2"></i>
+                    Resumen de Totales
+                </h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td class="fw-bold">Subtotal:</td>
+                        <td class="text-end">{{ cotizacion.subtotal|currency_rd }}</td>
+                    </tr>
+                    {% if cotizacion.descuento_porcentaje > 0 %}
+                    <tr>
+                        <td class="fw-bold">Descuento ({{ cotizacion.descuento_porcentaje|percentage }}):</td>
+                        <td class="text-end text-danger">-{{ cotizacion.descuento_monto|currency_rd }}</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Base Imponible:</td>
+                        <td class="text-end">{{ cotizacion.subtotal|add:cotizacion.descuento_monto|currency_rd }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td class="fw-bold">IVA ({{ cotizacion.iva_porcentaje|percentage }}):</td>
+                        <td class="text-end">{{ cotizacion.iva_monto|currency_rd }}</td>
+                    </tr>
+                    <tr class="border-top">
+                        <td class="fw-bold h5">TOTAL:</td>
+                        <td class="text-end h5 text-primary">{{ cotizacion.total|currency_rd }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notas y términos -->
+{% if cotizacion.notas or cotizacion.terminos_condiciones %}
+<div class="row">
+    {% if cotizacion.notas %}
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-sticky-note me-2"></i>
+                    Notas Adicionales
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ cotizacion.notas|linebreaks }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if cotizacion.terminos_condiciones %}
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-file-contract me-2"></i>
+                    Términos y Condiciones
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ cotizacion.terminos_condiciones|linebreaks }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Acciones -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="btn-group" role="group">
+                    <a href="{% url 'cotizaciones:cotizacion_pdf' cotizacion.pk %}" class="btn btn-success btn-lg">
+                        <i class="fas fa-download me-2"></i>Descargar PDF
+                    </a>
+                    <a href="{% url 'cotizaciones:cotizacion_update' cotizacion.pk %}" class="btn btn-warning btn-lg">
+                        <i class="fas fa-edit me-2"></i>Editar Cotización
+                    </a>
+                    <a href="{% url 'cotizaciones:cotizacion_detalles_edit' cotizacion.pk %}" class="btn btn-info btn-lg">
+                        <i class="fas fa-list-ul me-2"></i>Editar Detalles
+                    </a>
+                    <a href="{% url 'cotizaciones:cotizacion_list' %}" class="btn btn-secondary btn-lg">
+                        <i class="fas fa-arrow-left me-2"></i>Volver a la Lista
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

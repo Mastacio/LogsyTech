@@ -1,0 +1,260 @@
+{% extends 'cotizaciones/base.html' %}
+{% load currency_filters %}
+{% load crispy_forms_tags %}
+
+{% block title %}Cotizaciones - Sistema de Cotizaciones{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-file-invoice-dollar me-2"></i>
+                Cotizaciones
+            </h1>
+            <div>
+                <a href="{% url 'cotizaciones:cotizacion_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Nueva Cotización
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros y búsqueda -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">Buscar</label>
+                        <input type="text" class="form-control" id="search" name="search" 
+                               value="{{ request.GET.search }}" placeholder="Número, cliente o empresa...">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="estado" class="form-label">Estado</label>
+                        <select class="form-select" id="estado" name="estado">
+                            <option value="">Todos los estados</option>
+                            {% for estado_value, estado_nombre in estados %}
+                                <option value="{{ estado_value }}" {% if request.GET.estado == estado_value %}selected{% endif %}>
+                                    {{ estado_nombre }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="modalidad" class="form-label">Modalidad de Pago</label>
+                        <select class="form-select" id="modalidad" name="modalidad">
+                            <option value="">Todas las modalidades</option>
+                            <option value="mensual" {% if request.GET.modalidad == 'mensual' %}selected{% endif %}>Mensual</option>
+                            <option value="anual" {% if request.GET.modalidad == 'anual' %}selected{% endif %}>Anual</option>
+                            <option value="unico" {% if request.GET.modalidad == 'unico' %}selected{% endif %}>Pago único</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <div class="d-grid gap-2 w-100">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i>Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de cotizaciones -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    Lista de Cotizaciones
+                    <span class="badge bg-secondary ms-2">{{ page_obj.paginator.count }}</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if cotizaciones %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Número</th>
+                                <th>Cliente</th>
+                                <th>Estado</th>
+                                <th>Modalidad</th>
+                                <th>Total</th>
+                                <th>Fecha Creación</th>
+                                <th>Vencimiento</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cotizacion in cotizaciones %}
+                            <tr>
+                                <td>
+                                    <strong>{{ cotizacion.numero_cotizacion }}</strong>
+                                </td>
+                                <td>
+                                    <div>
+                                        <div class="fw-bold">{{ cotizacion.cliente.nombre }}</div>
+                                        {% if cotizacion.cliente.empresa %}
+                                            <small class="text-muted">{{ cotizacion.cliente.empresa }}</small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{% if cotizacion.estado == 'aprobada' %}success{% elif cotizacion.estado == 'enviada' %}warning{% elif cotizacion.estado == 'rechazada' %}danger{% elif cotizacion.estado == 'cancelada' %}secondary{% else %}primary{% endif %}">
+                                        {{ cotizacion.get_estado_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">
+                                        {{ cotizacion.get_modalidad_pago_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong>{{ cotizacion.total|currency_rd }}</strong>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ cotizacion.fecha_creacion|date:"d/m/Y" }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <small class="{% if cotizacion.fecha_vencimiento < today %}text-danger{% elif cotizacion.fecha_vencimiento < today_plus_7 %}text-warning{% else %}text-muted{% endif %}">
+                                        {{ cotizacion.fecha_vencimiento|date:"d/m/Y" }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{% url 'cotizaciones:cotizacion_detail' cotizacion.pk %}" 
+                                           class="btn btn-outline-primary" 
+                                           data-bs-toggle="tooltip" 
+                                           title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'cotizaciones:cotizacion_pdf' cotizacion.pk %}" 
+                                           class="btn btn-outline-success" 
+                                           data-bs-toggle="tooltip" 
+                                           title="Descargar PDF">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        <a href="{% url 'cotizaciones:cotizacion_pdf_sin_info' cotizacion.pk %}" 
+                                        class="btn btn-outline-success" 
+                                        data-bs-toggle="tooltip" 
+                                        title="Descargar PDF sin información de la empresa">
+                                         <i class="fas fa-download"></i>
+                                     </a>
+                                        <a href="{% url 'cotizaciones:cotizacion_update' cotizacion.pk %}" 
+                                           class="btn btn-outline-warning" 
+                                           data-bs-toggle="tooltip" 
+                                           title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'cotizaciones:cotizacion_detalles_edit' cotizacion.pk %}" 
+                                           class="btn btn-outline-info" 
+                                           data-bs-toggle="tooltip" 
+                                           title="Editar detalles">
+                                            <i class="fas fa-list-ul"></i>
+                                        </a>
+                                        <a href="{% url 'cotizaciones:cotizacion_delete' cotizacion.pk %}" 
+                                           class="btn btn-outline-danger" 
+                                           data-bs-toggle="tooltip" 
+                                           title="Eliminar"
+                                           onclick="return confirm('¿Estás seguro de que quieres eliminar esta cotización?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                {% if is_paginated %}
+                <nav aria-label="Navegación de páginas" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.modalidad %}&modalidad={{ request.GET.modalidad }}{% endif %}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.modalidad %}&modalidad={{ request.GET.modalidad }}{% endif %}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.modalidad %}&modalidad={{ request.GET.modalidad }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.modalidad %}&modalidad={{ request.GET.modalidad }}{% endif %}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.modalidad %}&modalidad={{ request.GET.modalidad }}{% endif %}">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-4x text-muted mb-4"></i>
+                    <h4 class="text-muted">No se encontraron cotizaciones</h4>
+                    <p class="text-muted">No hay cotizaciones que coincidan con los criterios de búsqueda.</p>
+                    <a href="{% url 'cotizaciones:cotizacion_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Crear Primera Cotización
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-submit form when select values change
+document.getElementById('estado').addEventListener('change', function() {
+    this.form.submit();
+});
+
+document.getElementById('modalidad').addEventListener('change', function() {
+    this.form.submit();
+});
+
+// Clear filters
+function clearFilters() {
+    document.getElementById('search').value = '';
+    document.getElementById('estado').value = '';
+    document.getElementById('modalidad').value = '';
+    document.querySelector('form').submit();
+}
+</script>
+{% endblock %}
+

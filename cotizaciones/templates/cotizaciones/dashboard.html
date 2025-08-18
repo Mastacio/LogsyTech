@@ -1,0 +1,320 @@
+{% extends 'cotizaciones/base.html' %}
+{% load currency_filters %}
+
+{% block title %}Dashboard - Sistema de Cotizaciones{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-tachometer-alt me-2"></i>
+                Dashboard
+            </h1>
+            <div>
+                <a href="{% url 'cotizaciones:cotizacion_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Nueva Cotización
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Estadísticas principales -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-white-50 text-uppercase mb-1">Total Cotizaciones</div>
+                        <div class="h2 mb-0 text-white">{{ total_cotizaciones }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-file-invoice-dollar stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-white-50 text-uppercase mb-1">Pendientes</div>
+                        <div class="h2 mb-0 text-white">{{ cotizaciones_pendientes }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-clock stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-white-50 text-uppercase mb-1">Aprobadas</div>
+                        <div class="h2 mb-0 text-white">{{ cotizaciones_aprobadas }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-check-circle stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <div class="text-white-50 text-uppercase mb-1">Clientes Activos</div>
+                        <div class="h2 mb-0 text-white">{{ total_clientes }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users stats-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráfico de cotizaciones por estado -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    Cotizaciones por Estado
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="estadosChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    Distribución por Estado
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for estado, cantidad in cotizaciones_por_estado.items %}
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <span class="badge bg-{% cycle 'primary' 'success' 'warning' 'danger' 'secondary' %} me-2">
+                            {{ cantidad }}
+                        </span>
+                        {{ estado }}
+                    </div>
+                    <div class="text-muted">
+                        {% if total_cotizaciones > 0 %}
+                            {{ cantidad|floatformat:1 }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cotizaciones recientes -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Cotizaciones Recientes
+                </h5>
+                <a href="{% url 'cotizaciones:cotizacion_list' %}" class="btn btn-sm btn-outline-primary">
+                    Ver Todas
+                </a>
+            </div>
+            <div class="card-body">
+                {% if cotizaciones_recientes %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Número</th>
+                                <th>Cliente</th>
+                                <th>Estado</th>
+                                <th>Modalidad</th>
+                                <th>Total</th>
+                                <th>Fecha</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cotizacion in cotizaciones_recientes %}
+                            <tr>
+                                <td>
+                                    <strong>{{ cotizacion.numero_cotizacion }}</strong>
+                                </td>
+                                <td>
+                                    <div>
+                                        <div class="fw-bold">{{ cotizacion.cliente.nombre }}</div>
+                                        {% if cotizacion.cliente.empresa %}
+                                            <small class="text-muted">{{ cotizacion.cliente.empresa }}</small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{% if cotizacion.estado == 'aprobada' %}success{% elif cotizacion.estado == 'enviada' %}warning{% elif cotizacion.estado == 'rechazada' %}danger{% elif cotizacion.estado == 'cancelada' %}secondary{% else %}primary{% endif %}">
+                                        {{ cotizacion.get_estado_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">
+                                        {{ cotizacion.get_modalidad_pago_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong>{{ cotizacion.total|currency_rd }}</strong>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ cotizacion.fecha_creacion|date:"d/m/Y" }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{% url 'cotizaciones:cotizacion_detail' cotizacion.pk %}" 
+                                           class="btn btn-outline-primary" 
+                                           data-bs-toggle="tooltip" 
+                                           title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'cotizaciones:cotizacion_pdf' cotizacion.pk %}" 
+                                           class="btn btn-outline-success" 
+                                           data-bs-toggle="tooltip" 
+                                           title="Descargar PDF">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        <a href="{% url 'cotizaciones:cotizacion_update' cotizacion.pk %}" 
+                                           class="btn btn-outline-warning" 
+                                           data-bs-toggle="tooltip" 
+                                           title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No hay cotizaciones recientes</h5>
+                    <p class="text-muted">Crea tu primera cotización para comenzar</p>
+                    <a href="{% url 'cotizaciones:cotizacion_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Crear Cotización
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Acciones rápidas -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    Acciones Rápidas
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'cotizaciones:cotizacion_create' %}" class="btn btn-primary w-100">
+                            <i class="fas fa-file-invoice-dollar me-2"></i>
+                            Nueva Cotización
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'cotizaciones:cliente_create' %}" class="btn btn-success w-100">
+                            <i class="fas fa-user-plus me-2"></i>
+                            Nuevo Cliente
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'cotizaciones:servicio_create' %}" class="btn btn-info w-100">
+                            <i class="fas fa-cog me-2"></i>
+                            Nuevo Servicio
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'cotizaciones:cotizacion_list' %}" class="btn btn-warning w-100">
+                            <i class="fas fa-list me-2"></i>
+                            Ver Cotizaciones
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Gráfico de cotizaciones por estado
+const ctx = document.getElementById('estadosChart').getContext('2d');
+const estadosChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+        labels: [{% for estado, cantidad in cotizaciones_por_estado.items %}'{{ estado }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for estado, cantidad in cotizaciones_por_estado.items %}{{ cantidad }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: [
+                '#667eea',
+                '#28a745',
+                '#ffc107',
+                '#dc3545',
+                '#6c757d'
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 20,
+                    usePointStyle: true
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
+
