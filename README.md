@@ -2,6 +2,8 @@
 
 Un sistema completo de gestión de cotizaciones desarrollado en Django para desarrolladores de software y consultores.
 
+<img width="1920" height="969" alt="1" src="https://github.com/user-attachments/assets/7258af76-6a97-4bfa-a1db-342ec1fb10a5" />
+
 ## 🚀 Características Principales
 
 ### 📋 Gestión de Clientes
