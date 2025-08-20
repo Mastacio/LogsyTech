@@ -1,0 +1,28 @@
+services:
+  web:
+    build: .
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn --bind 0.0.0.0:8002 --workers 3 quotes.wsgi:application"
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8002:8002"
+    env_file:
+      - .env
+    networks:
+      - default
+      - app_clinica_facil
+    restart: unless-stopped
+
+networks:
+  default:
+  app_clinica_facil:
+    external: true
+
+volumes:
+  static_volume:
+  media_volume:
